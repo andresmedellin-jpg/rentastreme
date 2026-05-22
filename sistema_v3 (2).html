@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Operaciones — Andrés</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F7F6F3;--surface:#FFFFFF;--border:#E4E2DC;--border2:#CCC9BF;
+  --ink:#2C2A26;--ink2:#6E6B64;--ink3:#A9A59D;
+  --accent:#2D6A2D;--accent-light:#EAF4EA;--accent-mid:#4A9E4A;
+  --warn:#C0410A;--warn-light:#FDF0EB;
+  --gold:#9A7200;--gold-light:#FBF5E0;
+  --blue:#1A3D7A;--blue-light:#EAF0FB;
+  --r:12px;--r2:8px;--r3:20px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+input,select,textarea,button{font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── PIN SCREEN ── */
+#pin-screen{position:fixed;inset:0;background:#F0EEE8;display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:32px}
+.pin-logo{display:flex;align-items:center;gap:12px}
+.pin-logo-mark{width:48px;height:48px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center}
+.pin-logo-mark svg{width:26px;height:26px;fill:white}
+.pin-logo-text{font-size:22px;font-weight:800;color:#2C2A26;letter-spacing:-.5px}
+.pin-logo-sub{font-size:12px;color:#8A8680;margin-top:2px}
+.role-grid{display:flex;gap:12px}
+.role-card{background:#FFFFFF;border:1.5px solid #DDD9CF;border-radius:16px;padding:20px 28px;cursor:pointer;transition:all .2s;text-align:center;min-width:150px}
+.role-card:hover{border-color:var(--accent-mid);background:#F0FAF0;transform:translateY(-2px)}
+.role-card-icon{font-size:28px;margin-bottom:8px}
+.role-card-name{font-size:14px;font-weight:700;color:#2C2A26}
+.role-card-sub{font-size:11px;color:#8A8680;margin-top:3px}
+.pin-panel{display:none;flex-direction:column;align-items:center;gap:20px;background:#F0EEE8}
+.pin-panel.show{display:flex}
+.pin-dots{display:flex;gap:10px}
+.pin-dot{width:12px;height:12px;border-radius:50%;border:2px solid #CCC9BF;transition:all .15s}
+.pin-dot.filled{background:var(--accent-mid);border-color:var(--accent-mid)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+.pin-key{height:64px;border-radius:12px;background:#FFFFFF;border:1.5px solid #DDD9CF;font-size:22px;font-weight:600;color:#2C2A26;cursor:pointer;transition:all .1s}
+.pin-key:hover{background:#F0FAF0;border-color:var(--accent-mid)}
+.pin-key:active{transform:scale(.94)}
+.pin-key.ok{background:var(--accent);border-color:var(--accent)}
+.pin-err{color:#C0410A;font-size:12px;height:16px;font-weight:500}
+.pin-back{color:#8A8680;font-size:12px;cursor:pointer;text-decoration:underline;margin-top:-4px}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+#app.show{display:block}
+
+/* ── HEADER ── */
+.hdr{background:#FFFFFF;border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:50}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-mark{width:28px;height:28px;background:var(--accent-mid);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.hdr-mark svg{width:16px;height:16px;fill:white}
+.hdr-title{font-size:14px;font-weight:700;color:#2C2A26;letter-spacing:-.2px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-clock{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#6E6B64;background:#F0EEE8;padding:4px 10px;border-radius:8px;letter-spacing:.5px}
+.hdr-user{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px}
+.hdr-user.admin{background:var(--accent);color:white}
+.hdr-user.guardia{background:#E8E4DC;color:#6E6B64}
+.hdr-exit{background:transparent;border:1.5px solid #DDD9CF;color:#6E6B64;font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+.hdr-exit:hover{border-color:#CCC9BF;color:#2C2A26}
+
+/* ── LAYOUT ── */
+.shell{display:flex;height:calc(100vh - 52px)}
+.sidebar{width:200px;flex-shrink:0;background:#F0EEE8;border-right:1px solid var(--border);padding:10px 8px;overflow-y:auto;border-right:1px solid #1A1916}
+.s-sec{font-size:9px;font-weight:700;color:#A9A59D;text-transform:uppercase;letter-spacing:1.2px;padding:10px 10px 4px}
+.s-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border-radius:10px;border:none;background:transparent;color:#6E6B64;font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .12s;margin-bottom:1px}
+.s-btn svg{width:14px;height:14px;flex-shrink:0;opacity:.7}
+.s-btn:hover{background:#E4E0D8;color:#2C2A26}
+.s-btn.on{background:#2D5016;color:white}
+.s-btn.on svg{opacity:1}
+.s-div{height:1px;background:#DDD9CF;margin:6px 4px}
+.content{flex:1;overflow-y:auto;padding:24px;padding-bottom:80px}
+.pg{display:none}.pg.on{display:block}
+
+/* ── BOTTOM NAV ── */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#FFFFFF;border-top:1px solid var(--border);height:58px;z-index:40}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;color:#A9A59D;font-size:9px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.3px;padding:0}
+.bn svg{width:19px;height:19px}
+.bn.on{color:var(--accent-mid)}
+
+/* ── TYPOGRAPHY ── */
+.pg-title{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--ink);margin-bottom:4px}
+.pg-sub{font-size:13px;color:var(--ink2);margin-bottom:20px}
+.section-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;margin-top:20px;display:block}
+.section-label:first-child{margin-top:0}
+
+/* ── SURFACE CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-pad{padding:16px 18px}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;gap:10px;margin-bottom:20px}
+.stat-grid.cols-4{grid-template-columns:repeat(4,1fr)}
+.stat-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.stat-grid.cols-2{grid-template-columns:repeat(2,1fr)}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.stat-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.stat-note{font-size:11px;color:var(--ink3);margin-top:3px}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;background:var(--bg)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAF8}
+
+/* ── CHIPS & BADGES ── */
+.chip{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;display:inline-block;color:var(--ink)}
+.tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;display:inline-block}
+.tag-in{background:#E6F4EC;color:#1A5C32}
+.tag-out{background:var(--bg);color:var(--ink2)}
+.tag-ret{background:var(--gold-light);color:var(--gold)}
+.tag-abs{background:var(--warn-light);color:var(--warn)}
+.tag-vac{background:var(--bg);color:var(--ink3)}
+.tag-paid{background:var(--accent-light);color:var(--accent)}
+
+/* ── AVATAR ── */
+.av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;letter-spacing:-.3px}
+.av-sm{width:28px;height:28px;font-size:10px}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 16px;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .12s;display:inline-flex;align-items:center;gap:6px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:var(--ink);color:white}.btn-primary:hover:not(:disabled){background:#333}
+.btn-accent{background:var(--accent);color:white}.btn-accent:hover:not(:disabled){background:#3D6B20}
+.btn-ghost{background:transparent;color:var(--ink2);border:1.5px solid var(--border)}.btn-ghost:hover{background:var(--bg);border-color:var(--border2)}
+.btn-danger{background:var(--warn-light);color:var(--warn);border:1.5px solid #FACBB8}.btn-danger:hover{background:var(--warn);color:white}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-xs{padding:4px 9px;font-size:11px}
+
+/* ── FORM ── */
+.field{margin-bottom:12px}
+.lbl{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.inp{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 12px;font-size:13px;color:var(--ink);outline:none;transition:border-color .12s}
+.inp:focus{border-color:var(--accent-mid)}
+.sel{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 12px;font-size:13px;color:var(--ink);outline:none}
+.inp-row{display:grid;gap:10px}
+.inp-row.cols-2{grid-template-columns:1fr 1fr}
+.inp-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+
+/* ── MODAL ── */
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
+.mbox{background:var(--surface);border-radius:18px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.18)}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.mhead-title{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.mclose{width:28px;height:28px;border:none;background:var(--bg);border-radius:8px;cursor:pointer;font-size:16px;color:var(--ink2);display:flex;align-items:center;justify-content:center}
+.mbody{padding:20px}
+.mfoot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── ACCESOS page ── */
+.emp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.emp-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .12s}
+.emp-card:hover{border-color:var(--border2)}
+.emp-card.sel{border-color:var(--accent-mid);background:var(--accent-light)}
+.emp-card.vac{opacity:.4;cursor:default;background:var(--bg)}
+.emp-card.ret{border-color:var(--gold)!important;background:var(--gold-light)!important}
+.reg-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.reg-alert{background:var(--gold-light);border:1.5px solid #E8D08C;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--gold);font-weight:600;margin-bottom:12px;display:none}
+.reg-alert.show{display:block}
+.reg-btns{display:flex;gap:8px}
+.btn-entrada{background:#1A5C32;color:white;flex:1;justify-content:center;font-size:14px;font-weight:800;padding:13px}
+.btn-entrada:hover:not(:disabled){background:#1E6B3A}
+.btn-salida{background:var(--warn);color:white;flex:1;justify-content:center;font-size:14px;font-weight:800;padding:13px}
+.btn-salida:hover:not(:disabled){background:#B33A08}
+.btn-entrada:disabled,.btn-salida:disabled{background:var(--bg);color:var(--ink3);border:1.5px solid var(--border)}
+
+/* ── NOMINA / CIERRE ── */
+.obra-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.obra-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+.obra-hdr-name{font-size:13px;font-weight:800;color:var(--ink)}
+.obra-hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.obra-total{font-size:14px;font-weight:800;font-family:'DM Mono',monospace}
+.obra-subtag{font-size:10px;font-weight:700;color:var(--ink3);background:var(--border);padding:2px 7px;border-radius:99px}
+.emp-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.emp-row:last-child{border-bottom:none}
+.emp-row-info{flex:1;min-width:0}
+.emp-row-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.emp-row-sub{font-size:11px;color:var(--ink2);margin-top:1px}
+.emp-row-monto{text-align:right;flex-shrink:0}
+.emp-row-val{font-size:14px;font-weight:800;font-family:'DM Mono',monospace}
+.emp-row-desc{font-size:10px;color:var(--warn);font-weight:600;margin-top:1px}
+.faltas-row{display:flex;gap:4px;padding:6px 16px 10px 60px;flex-wrap:wrap}
+.falta-btn{padding:4px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .1s}
+.falta-btn.presente{background:#E6F4EC;color:#1A5C32}
+.falta-btn.ausente{background:var(--warn-light);color:var(--warn)}
+
+/* ── OBRAS page ── */
+.obra-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.obra-card-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.obra-card-body{padding:12px 16px}
+.obra-status{font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px}
+.os-activa{background:#E6F4EC;color:#1A5C32}
+.os-pausada{background:var(--gold-light);color:var(--gold)}
+.os-terminada{background:var(--bg);color:var(--ink3)}
+
+/* ── PERSONAL page ── */
+.pers-group-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);border-top:2px solid var(--accent-mid)}
+.pers-group-hdr.none{border-top-color:var(--border2)}
+.pers-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+.pers-row:last-child{border-bottom:none}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:#1A1814;color:white;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transform:translateY(6px);transition:all .22s;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;pointer-events:none;max-width:300px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:32px;color:var(--ink3);font-size:13px}
+
+/* ── WEEK SELECTOR ── */
+.week-sel{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.week-sel select{flex:1}
+.week-info{font-size:12px;color:var(--ink2);white-space:nowrap}
+
+/* ── PAID TAG ── */
+.pagado-row{background:#F6FBF7!important}
+
+@media(max-width:680px){
+  .sidebar,.s-div+.s-btn{display:none}
+  .bnav{display:flex}
+  .emp-grid{grid-template-columns:1fr}
+  .stat-grid.cols-4,.stat-grid.cols-3{grid-template-columns:1fr 1fr}
+  .content{padding:14px;padding-bottom:72px}
+  .inp-row.cols-3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN -->
+<div id="pin-screen">
+  <div class="pin-logo">
+    <div class="pin-logo-mark"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22" fill="none" stroke="white" stroke-width="1.5"/></svg></div>
+    <div><div class="pin-logo-text">Operaciones</div><div class="pin-logo-sub">Panel de Andrés Medellín</div></div>
+  </div>
+  <div class="role-grid" id="role-grid">
+    <div class="role-card" onclick="pickRole('admin')">
+      <div class="role-card-icon">👔</div>
+      <div class="role-card-name">Andrés</div>
+      <div class="role-card-sub">Administrador</div>
+    </div>
+    <div class="role-card" onclick="pickRole('guardia')">
+      <div class="role-card-icon">📋</div>
+      <div class="role-card-name">Paola</div>
+      <div class="role-card-sub">Registro accesos</div>
+    </div>
+  </div>
+  <div class="pin-panel" id="pin-panel">
+    <div style="font-size:14px;font-weight:700;color:white">Ingresa tu PIN</div>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pk('1')">1</button><button class="pin-key" onclick="pk('2')">2</button><button class="pin-key" onclick="pk('3')">3</button>
+      <button class="pin-key" onclick="pk('4')">4</button><button class="pin-key" onclick="pk('5')">5</button><button class="pin-key" onclick="pk('6')">6</button>
+      <button class="pin-key" onclick="pk('7')">7</button><button class="pin-key" onclick="pk('8')">8</button><button class="pin-key" onclick="pk('9')">9</button>
+      <button class="pin-key" onclick="pk('⌫')" style="font-size:18px">⌫</button><button class="pin-key" onclick="pk('0')">0</button><button class="pin-key ok" onclick="pk('ok')">OK</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-back" onclick="backRoles()">← Cambiar usuario</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-mark"><svg viewBox="0 0 24 24" fill="white"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+      <span class="hdr-title">Operaciones</span>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-clock" id="clk">--:--</span>
+      <span class="hdr-user" id="hdr-user">—</span>
+      <button class="hdr-exit" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="sidebar" id="sidebar">
+      <div class="s-sec">Accesos</div>
+      <button class="s-btn on" id="s-accesos" onclick="goPage('accesos',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-7 9a7 7 0 1 1 14 0H3z"/></svg>
+        Registro accesos
+      </button>
+      <div class="s-div" id="adiv"></div>
+      <div class="s-sec" id="asec">Administración</div>
+      <button class="s-btn" id="s-nomina" onclick="goPage('nomina',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 0 0-2 2v1h16V6a2 2 0 0 0-2-2H4zm14 5H2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm-6 3a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0v-1z"/></svg>
+        Rayas del viernes
+      </button>
+      <button class="s-btn" id="s-personal" onclick="goPage('personal',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-2 7a5 5 0 0 1 10 0H4z"/></svg>
+        Personal edificio
+      </button>
+      <button class="s-btn" id="s-obras" onclick="goPage('obras',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 0 0-.788 0l-7 3a1 1 0 0 0 0 1.84L5 8.144V13a1 1 0 0 0 .553.894l4 2a1 1 0 0 0 .894 0l4-2A1 1 0 0 0 15 13V8.144l2-.861v4.716a1 1 0 1 0 2 0V7a1 1 0 0 0-.606-.92l-8-3z"/></svg>
+        Obras
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- ACCESOS -->
+      <div class="pg on" id="pg-accesos">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div>
+            <div class="pg-title">Registro accesos</div>
+            <div class="pg-sub" id="acc-fecha-label">TREME Edificio</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <input class="inp" id="search-emp" placeholder="Buscar..." oninput="renderAccesos()" style="width:150px"/>
+            <select class="sel" id="f-obra-g" onchange="renderAccesos()" style="width:auto"></select>
+          </div>
+        </div>
+        <div class="emp-grid" id="emp-grid"></div>
+        <div class="reg-panel">
+          <div class="reg-alert" id="ret-alert">⚠️ Llegaría fuera de horario — se marcará como retardo</div>
+          <div id="sel-info" style="margin-bottom:12px">
+            <div style="background:var(--bg);border:1.5px dashed var(--border2);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--ink3)">← Selecciona un empleado</div>
+          </div>
+          <div class="reg-btns">
+            <button class="btn btn-entrada" id="btn-in" onclick="registrar('entrada')" disabled>↑ Entrada</button>
+            <button class="btn btn-salida" id="btn-out" onclick="registrar('salida')" disabled>↓ Salida</button>
+          </div>
+        </div>
+        <span class="section-label">Movimientos de hoy</span>
+        <div class="tbl-wrap"><table><thead><tr><th>Empleado</th><th>Obra</th><th>Tipo</th><th>Hora</th><th>Estado</th></tr></thead><tbody id="log-hoy"></tbody></table></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportAcc(false)">⬇ Exportar hoy</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportAcc(true)">⬇ Exportar todo</button>
+        </div>
+      </div>
+
+      <!-- NOMINA / RAYAS -->
+      <div class="pg" id="pg-nomina"><div id="nomina-root"></div></div>
+
+      <!-- PERSONAL EDIFICIO -->
+      <div class="pg" id="pg-personal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="pg-title">Personal edificio</div>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalEmp()">+ Agregar</button>
+        </div>
+        <div class="pg-sub">Empleados con control de acceso</div>
+        <div class="tbl-wrap" id="personal-list"></div>
+      </div>
+
+      <!-- OBRAS -->
+      <div class="pg" id="pg-obras">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="pg-title">Obras</div>
+          <button class="btn btn-accent btn-sm" onclick="abrirModalObra()">+ Nueva obra</button>
+        </div>
+        <div class="pg-sub">Proyectos activos</div>
+        <div id="obras-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav" id="bnav">
+    <button class="bn on" id="bn-accesos" onclick="goPage('accesos',this,true)"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-7 9a7 7 0 1 1 14 0H3z"/></svg>Accesos</button>
+    <button class="bn" id="bn-nomina" onclick="goPage('nomina',this,true)"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 0 0-2 2v1h16V6a2 2 0 0 0-2-2H4zm14 5H2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg>Rayas</button>
+    <button class="bn" id="bn-obras" onclick="goPage('obras',this,true)"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 0 0-.788 0l-7 3a1 1 0 0 0 0 1.84L5 8.144V13a1 1 0 0 0 .553.894l4 2a1 1 0 0 0 .894 0l4-2A1 1 0 0 0 15 13V8.144l2-.861v4.716a1 1 0 1 0 2 0V7a1 1 0 0 0-.606-.92l-8-3z"/></svg>Obras</button>
+  </div>
+</div>
+
+<!-- MODAL EMPLEADO EDIFICIO -->
+<div class="mover" id="m-emp" style="display:none">
+  <div class="mbox">
+    <div class="mhead"><span class="mhead-title" id="m-emp-title">Agregar empleado</span><button class="mclose" onclick="cerrarModalEmp()">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label class="lbl">Nombre completo</label><input class="inp" id="e-nombre" placeholder="Ej. Juan Pérez"/></div>
+      <div class="field"><label class="lbl">Puesto</label><input class="inp" id="e-dept" placeholder="Ej. Vigilancia"/></div>
+      <div class="field"><label class="lbl">Horario (descripción)</label><input class="inp" id="e-horario" placeholder="Ej. 9am a 6pm"/></div>
+      <div class="inp-row cols-2">
+        <div class="field"><label class="lbl">Hora entrada</label><input type="time" class="inp" id="e-hora" value="09:00"/></div>
+        <div class="field"><label class="lbl">Tolerancia (min)</label><input type="number" class="inp" id="e-tol" value="10" min="0" max="120"/></div>
+      </div>
+      <div class="field"><label class="lbl">Obra / Proyecto</label><select class="sel" id="e-obra"><option value="">Sin asignar</option></select></div>
+      <div class="field"><label class="lbl">Estado</label>
+        <select class="sel" id="e-activo"><option value="1">Activo</option><option value="0">Inactivo / Vacante</option></select>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-danger btn-sm" id="e-del-btn" onclick="eliminarEmpEdificio()" style="display:none;margin-right:auto">Eliminar</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalEmp()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarEmpEdificio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OBRA -->
+<div class="mover" id="m-obra" style="display:none">
+  <div class="mbox">
+    <div class="mhead"><span class="mhead-title" id="m-obra-title">Nueva obra</span><button class="mclose" onclick="cerrarModalObra()">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label class="lbl">Nombre</label><input class="inp" id="o-nombre" placeholder="Ej. Residencial Los Pinos"/></div>
+      <div class="field"><label class="lbl">Cliente</label><input class="inp" id="o-cliente" placeholder="Ej. Grupo ABC"/></div>
+      <div class="field"><label class="lbl">Dirección</label><input class="inp" id="o-dir" placeholder="Ej. Av. Principal 123"/></div>
+      <div class="inp-row cols-2">
+        <div class="field"><label class="lbl">Inicio</label><input type="date" class="inp" id="o-inicio"/></div>
+        <div class="field"><label class="lbl">Fin estimado</label><input type="date" class="inp" id="o-fin"/></div>
+      </div>
+      <div class="field"><label class="lbl">Estado</label>
+        <select class="sel" id="o-estado"><option value="activa">Activa</option><option value="pausada">Pausada</option><option value="terminada">Terminada</option></select>
+      </div>
+      <div class="field">
+        <label class="lbl">Trabajadores de nómina asignados</label>
+        <div id="o-trabajadores-wrap" style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:10px;max-height:160px;overflow-y:auto">
+          <div style="font-size:12px;color:var(--ink3)">Cargando...</div>
+        </div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:4px">Los empleados se asignan desde "Rayas del viernes" → campo Obra de cada empleado</div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-danger btn-sm" id="o-del-btn" onclick="eliminarObra()" style="display:none;margin-right:auto">Eliminar</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalObra()">Cancelar</button>
+      <button class="btn btn-accent btn-sm" onclick="guardarObra()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot" id="tdot"></div><span id="tmsg"></span></div>
+<div id="modal-react-root"></div>
+
+<script type="text/babel">
+const {useState,useEffect,useRef,useMemo}=React;
+
+// ═══════════════ CONFIG ═══════════════
+const PIN_ADMIN   = '2545';
+const PIN_GUARDIA = '1234';
+const SB_URL = 'https://mqzuaxxnidaokhdqcurm.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xenVheHhuaWRhb2toZHFjdXJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzg2NDEsImV4cCI6MjA5MTQxNDY0MX0.vHSAuwxc_q-JvmRMkFsaGEPHtjsjqEln3QbREa9B-VU';
+const NOM_USER   = 'ebc4dfb0-e524-48a8-a441-ebc4f0133960';
+const OBRAS_KEY  = 'obras_andres_v1';
+const NOM_KEY    = 'nomina_andres_v3';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ═══════════════ HELPERS ═══════════════
+const uid  = ()=>'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);});
+const hoy  = ()=>new Date().toISOString().slice(0,10);
+const getHora = ()=>{ const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); };
+const fechaHoy = ()=>{ const n=new Date(); return String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear(); };
+const isoToMx  = s=>{ if(!s)return''; const p=s.split('-'); return p.length===3?p[2].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[0]:s; };
+const mxToIso  = s=>{ if(!s)return''; const p=s.split('/'); return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):s; };
+const fmt$ = n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n||0);
+const getInits = n=>n.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+const parseHM  = s=>{ if(!s)return null; const[h,m]=s.split(':').map(Number); return h*60+m; };
+
+const PALETA=[
+  {bg:'#E8ECF8',tc:'#2D3A8C'},{bg:'#E6F4EC',tc:'#1A5C32'},{bg:'#FBF0F0',tc:'#7A1C1C'},
+  {bg:'#FBF5E6',tc:'#6B4A00'},{bg:'#EEF0FB',tc:'#3A3080'},{bg:'#E6F7F4',tc:'#0A5C4A'},
+  {bg:'#FBE8F0',tc:'#7A1C4A'},{bg:'#F0F4FB',tc:'#1C3A7A'},{bg:'#F4EEF8',tc:'#5C1A7A'},
+  {bg:'#F4F8E6',tc:'#3A5C1A'},{bg:'#FBF0E6',tc:'#7A3A00'},{bg:'#E6F4FB',tc:'#1A4A7A'},
+];
+const col = id=>PALETA[Math.abs((typeof id==='number'?id:parseInt(id)||0)-1)%PALETA.length]||PALETA[0];
+
+const semanaDeHoy=()=>{const d=new Date();d.setHours(0,0,0,0);const lun=new Date(d);lun.setDate(d.getDate()-(d.getDay()||7)+1);const dom=new Date(lun);dom.setDate(lun.getDate()+6);const f=x=>x.toISOString().slice(0,10);return{lunes:f(lun),domingo:f(dom),key:f(lun)};};
+const semLabel=key=>{if(!key)return'';const d=new Date(key+'T00:00:00'),fin=new Date(d);fin.setDate(d.getDate()+6);const o={day:'numeric',month:'short'};return d.toLocaleDateString('es-MX',o)+' – '+fin.toLocaleDateString('es-MX',o);};
+const ultimasSemanas=()=>{const lista=[];const d=new Date();d.setHours(0,0,0,0);const lun=new Date(d);lun.setDate(d.getDate()-(d.getDay()||7)+1);for(let i=0;i<52;i++){const ini=new Date(lun);ini.setDate(lun.getDate()-i*7);lista.push(ini.toISOString().slice(0,10));}return lista;};
+const diasSemana=(lunKey,n=6)=>{const lun=new Date(lunKey+'T00:00:00');return Array.from({length:n},(_,i)=>{const d=new Date(lun);d.setDate(lun.getDate()+i);return{fecha:d.toISOString().slice(0,10),label:['L','M','X','J','V','S','D'][i]};});};
+
+// ═══════════════ SUPABASE ═══════════════
+const HDR={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+const sbGet=(t,q='')=>fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:{...HDR,'Prefer':'return=representation'}}).then(r=>r.ok?r.json():r.text().then(e=>{throw new Error(e);}));
+const sbPost=(t,b)=>fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(b)}).then(r=>r.ok?r.json():r.text().then(e=>{throw new Error(e);}));
+const sbPatch=(t,id,b)=>fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(b)}).then(r=>r.ok?r.json():r.text().then(e=>{throw new Error(e);}));
+const sbDel=(t,id)=>fetch(`${SB_URL}/rest/v1/${t}?id=eq.${Number(id)||id}`,{method:'DELETE',headers:{...HDR,'Prefer':'return=minimal'}}).then(r=>{if(!r.ok)return r.text().then(e=>{throw new Error(e);});});
+
+// Nómina en Supabase
+async function loadNomData(){try{const{data}=await sb.from('nomina_data').select('data').eq('user_id',NOM_USER).maybeSingle();return data?.data||null;}catch{return null;}}
+async function saveNomData(d){try{await sb.from('nomina_data').upsert({user_id:NOM_USER,data:d,updated_at:new Date().toISOString()},{onConflict:'user_id'});}catch(e){console.error(e);}}
+
+// ═══════════════ ESTADO ═══════════════
+let AC={empleados:[],registros:[]};
+let OBRAS=[];
+let currentRole=null;
+let selId=null;
+
+const normEmp=e=>({id:e.id,nombre:e.nombre,dept:e.dept||'',horario:e.horario||'',horaEntrada:e.hora_entrada||'09:00',tolerancia:parseInt(e.tolerancia)||10,activo:e.activo,obraId:e.obra_id||null});
+const normReg=r=>({id:r.id,empId:r.emp_id,empNombre:r.emp_nombre,tipo:r.tipo,hora:r.hora,fechaISO:r.fecha_iso||(r.fecha_str?mxToIso(r.fecha_str):''),estado:r.estado||'normal',minutosTarde:r.minutos_tarde||0,obraId:r.obra_id||null,obraNombre:r.obra_nombre||''});
+
+function getObraNombre(id){if(!id)return'';const o=OBRAS.find(x=>String(x.id)===String(id));return o?o.nombre:'';}
+function loadObras(){try{OBRAS=JSON.parse(localStorage.getItem(OBRAS_KEY)||'[]');}catch{OBRAS=[];}}
+function saveObras(){localStorage.setItem(OBRAS_KEY,JSON.stringify(OBRAS));}
+
+async function recargarAC(){
+  const d30=new Date();d30.setDate(d30.getDate()-30);const desde=d30.toISOString().slice(0,10);
+  const[emps,regs]=await Promise.all([
+    sbGet('empleados','select=*&order=nombre'),
+    sbGet('registros',`select=*&order=id.desc&limit=2000&fecha_iso=gte.${desde}`)
+  ]);
+  AC.empleados=emps.map(normEmp);
+  AC.registros=regs.map(normReg);
+}
+
+// ═══════════════ ACCESOS ═══════════════
+const ultimoMov=id=>{const h=hoy();return AC.registros.find(r=>r.empId===id&&r.fechaISO===h)||null;};
+const statusEmp=id=>{const u=ultimoMov(id);return!u?'absent':u.tipo==='entrada'?'in':'out';};
+const esRetardo=emp=>{if(!emp.horaEntrada)return false;const n=new Date();return n.getHours()*60+n.getMinutes()>parseHM(emp.horaEntrada)+(emp.tolerancia||0);};
+const calcTarde=(emp,hora)=>{if(!emp.horaEntrada)return 0;const[h,m]=hora.split(':').map(Number);const d=(h*60+m)-parseHM(emp.horaEntrada)-(emp.tolerancia||0);return d>0?d:0;};
+
+function syncObrasSelect(){
+  const s1=document.getElementById('e-obra');
+  if(s1){while(s1.options.length>1)s1.remove(1);OBRAS.filter(o=>o.estado!=='terminada').forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nombre;s1.appendChild(op);});}
+  const s2=document.getElementById('f-obra-g');
+  if(s2){while(s2.options.length>1)s2.remove(1);OBRAS.forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.nombre;s2.appendChild(op);});}
+}
+
+function renderAccesos(){
+  const q=(document.getElementById('search-emp')?.value||'').toLowerCase();
+  const oF=document.getElementById('f-obra-g')?.value||'';
+  let lista=AC.empleados.filter(e=>!q||e.nombre.toLowerCase().includes(q));
+  if(oF)lista=lista.filter(e=>String(e.obraId)===oF);
+  const grid=document.getElementById('emp-grid');if(!grid)return;
+  grid.innerHTML=lista.map(e=>{
+    const c=col(e.id);const ob=getObraNombre(e.obraId);
+    if(!e.activo)return'';
+    const st=statusEmp(e.id);const ret=st==='absent'&&esRetardo(e);
+    const cls=st==='in'?'tag-in':st==='out'?'tag-out':ret?'tag-ret':'tag-abs';
+    const lbl=st==='in'?'Dentro':st==='out'?'Salió':ret?'Retardo':'Ausente';
+    return`<div class="emp-card ${selId===e.id?'sel':''} ${ret?'ret':''}" onclick="selEmp(${e.id})">
+      <div class="av" style="background:${c.bg};color:${c.tc}">${getInits(e.nombre)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.nombre}</div>
+        <div style="font-size:11px;color:var(--ink2)">${ob?'🏗 '+ob:e.horario}</div>
+      </div>
+      <span class="tag ${cls}">${lbl}</span>
+    </div>`;
+  }).join('');
+  renderLogHoy();
+}
+
+function selEmp(id){
+  const emp=AC.empleados.find(e=>e.id===id);if(!emp||!emp.activo)return;
+  selId=id;
+  const st=statusEmp(id);const c=col(id);const ret=st==='absent'&&esRetardo(emp);
+  document.getElementById('ret-alert').classList.toggle('show',ret&&st!=='in');
+  const ob=getObraNombre(emp.obraId);
+  document.getElementById('sel-info').innerHTML=`<div style="display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;padding:12px">
+    <div class="av" style="background:${c.bg};color:${c.tc}">${getInits(emp.nombre)}</div>
+    <div><div style="font-size:14px;font-weight:700">${emp.nombre}</div><div style="font-size:11px;color:var(--ink2)">${ob?'🏗 '+ob+' · ':''} ${emp.horario}</div></div>
+  </div>`;
+  document.getElementById('btn-in').disabled=(st==='in');
+  document.getElementById('btn-out').disabled=(st!=='in');
+  renderAccesos();
+}
+
+async function registrar(tipo){
+  if(!selId)return;
+  const emp=AC.empleados.find(e=>e.id===selId);
+  const hora=getHora();const fechaISO=hoy();const fechaStr=fechaHoy();
+  let estado='normal';const tarde=calcTarde(emp,hora);
+  if(tipo==='entrada'&&tarde>0)estado='retardo';
+  const ob=getObraNombre(emp.obraId);
+  const reg={id:Date.now(),emp_id:emp.id,emp_nombre:emp.nombre,tipo,hora,fecha_str:fechaStr,fecha_iso:fechaISO,estado,minutos_tarde:tarde,obra_id:emp.obraId||null,obra_nombre:ob};
+  AC.registros.unshift(normReg(reg));
+  renderLogHoy();
+  document.getElementById('btn-in').disabled=true;
+  document.getElementById('btn-out').disabled=true;
+  try{
+    await sbPost('registros',reg);
+    toast(tipo==='entrada'?(estado==='retardo'?`⚠️ Retardo: ${emp.nombre}`:`↑ ${emp.nombre}`):`↓ ${emp.nombre}`);
+  }catch{toast('Error al guardar','err');}
+  document.getElementById('ret-alert').classList.remove('show');
+  selEmp(selId);renderAdmin&&renderAdmin();
+}
+
+function renderLogHoy(){
+  const h=hoy();
+  const movs=AC.registros.filter(r=>r.fechaISO===h);
+  const tb=document.getElementById('log-hoy');if(!tb)return;
+  if(!movs.length){tb.innerHTML='<tr><td colspan="5" class="empty">Sin movimientos hoy</td></tr>';return;}
+  tb.innerHTML=movs.map(r=>{const c=col(r.empId);const ob=r.obraNombre||getObraNombre(r.obraId);return`<tr>
+    <td><div style="display:flex;align-items:center;gap:7px"><div class="av av-sm" style="background:${c.bg};color:${c.tc}">${getInits(r.empNombre)}</div><span style="font-weight:600">${r.empNombre}</span></div></td>
+    <td style="color:var(--ink2);font-size:12px">${ob||'—'}</td>
+    <td><span style="font-weight:700;color:${r.tipo==='entrada'?'#1A5C32':'var(--warn)'}">${r.tipo==='entrada'?'↑ Entrada':'↓ Salida'}</span></td>
+    <td><span class="chip">${r.hora}</span></td>
+    <td>${r.estado==='retardo'?`<span class="tag tag-ret">+${r.minutosTarde}min</span>`:'<span style="color:var(--ink3)">—</span>'}</td>
+  </tr>`;}).join('');
+}
+
+function exportAcc(todo){
+  const filtro=hoy();
+  const movs=todo?AC.registros:AC.registros.filter(r=>r.fechaISO===filtro);
+  if(!movs.length){toast('Sin datos','err');return;}
+  const rows=[['Fecha','Empleado','Obra','Tipo','Hora','Estado','Min tarde']];
+  movs.forEach(r=>{const ob=r.obraNombre||getObraNombre(r.obraId)||'';rows.push([r.fechaISO,r.empNombre,ob,r.tipo,r.hora,r.estado,r.minutosTarde||0]);});
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`accesos_${todo?'completo':filtro}.csv`;a.click();toast('CSV descargado');
+}
+
+// ═══════════════ PERSONAL EDIFICIO ═══════════════
+let editEmpId=null;
+function renderPersonal(){
+  const el=document.getElementById('personal-list');if(!el)return;
+  if(!AC.empleados.length){el.innerHTML='<div class="empty">Sin empleados cargados</div>';return;}
+  const conObra={},sinObra=[];
+  AC.empleados.filter(e=>e.activo).forEach(e=>{if(e.obraId){if(!conObra[e.obraId])conObra[e.obraId]=[];conObra[e.obraId].push(e);}else sinObra.push(e);});
+  let h='';
+  Object.entries(conObra).forEach(([oid,emps])=>{
+    const ob=OBRAS.find(o=>String(o.id)===oid);
+    h+=`<div class="pers-group-hdr"><span>🏗</span><span style="font-size:12px;font-weight:800;color:var(--accent)">${ob?ob.nombre:'Obra'}</span><span style="font-size:11px;color:var(--ink3);margin-left:auto">${emps.length} personas</span></div>`;
+    h+=emps.map(empRowPersonal).join('');
+  });
+  if(sinObra.length){
+    h+=`<div class="pers-group-hdr none"><span>📋</span><span style="font-size:12px;font-weight:800;color:var(--ink2)">Sin obra asignada</span><span style="font-size:11px;color:var(--ink3);margin-left:auto">${sinObra.length} personas</span></div>`;
+    h+=sinObra.map(empRowPersonal).join('');
+  }
+  el.innerHTML=h;
+}
+
+function empRowPersonal(e){if(!e.activo)return'';
+  const c=col(e.id);
+  return`<div class="pers-row">
+    <div class="av" style="background:${e.activo?c.bg:'var(--bg)'};color:${e.activo?c.tc:'var(--ink3)'}">${getInits(e.nombre)}</div>
+    <div class="emp-row-info">
+      <div class="emp-row-name" style="${!e.activo?'color:var(--ink3)':''}">${e.nombre}</div>
+      <div class="emp-row-sub">${e.horario}${e.dept?' · '+e.dept:''} · Entrada ${e.horaEntrada} · Tol ${e.tolerancia}min</div>
+    </div>
+    <span class="tag ${e.activo?'tag-in':'tag-vac'}" style="margin-right:8px">${e.activo?'Activo':'Inactivo'}</span>
+    <button class="btn btn-ghost btn-xs" onclick="abrirModalEmp(${e.id})">Editar</button>
+  </div>`;
+}
+
+function abrirModalEmp(id){
+  editEmpId=id||null;
+  syncObrasSelect();
+  const m=document.getElementById('m-emp');
+  if(id){
+    const e=AC.empleados.find(x=>x.id===id);if(!e)return;
+    document.getElementById('m-emp-title').textContent='Editar empleado';
+    document.getElementById('e-nombre').value=e.nombre;
+    document.getElementById('e-dept').value=e.dept||'';
+    document.getElementById('e-horario').value=e.horario;
+    document.getElementById('e-hora').value=e.horaEntrada||'09:00';
+    document.getElementById('e-tol').value=e.tolerancia||10;
+    document.getElementById('e-activo').value=e.activo?'1':'0';
+    document.getElementById('e-del-btn').style.display='inline-flex';
+    setTimeout(()=>document.getElementById('e-obra').value=e.obraId||'',0);
+  }else{
+    document.getElementById('m-emp-title').textContent='Agregar empleado';
+    ['e-nombre','e-dept','e-horario'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('e-hora').value='09:00';
+    document.getElementById('e-tol').value='10';
+    document.getElementById('e-activo').value='1';
+    document.getElementById('e-obra').value='';
+    document.getElementById('e-del-btn').style.display='none';
+  }
+  m.style.display='flex';
+}
+function cerrarModalEmp(){document.getElementById('m-emp').style.display='none';}
+
+async function guardarEmpEdificio(){
+  const nombre=document.getElementById('e-nombre').value.trim();
+  if(!nombre){toast('Escribe el nombre','err');return;}
+  const obraId=document.getElementById('e-obra').value||null;
+  const d={nombre,dept:document.getElementById('e-dept').value.trim(),horario:document.getElementById('e-horario').value.trim()||'Sin horario',hora_entrada:document.getElementById('e-hora').value,tolerancia:parseInt(document.getElementById('e-tol').value)||10,activo:document.getElementById('e-activo').value==='1',obra_id:obraId,obra_nombre:obraId?getObraNombre(obraId):''};
+  try{
+    if(editEmpId)await sbPatch('empleados',editEmpId,d);
+    else await sbPost('empleados',d);
+    await recargarAC();cerrarModalEmp();renderPersonal();renderAccesos();renderObras();
+    toast(editEmpId?'Empleado actualizado':'Empleado agregado');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+async function eliminarEmpEdificio(){
+  if(!confirm('¿Eliminar este empleado?\n\nSi tiene registros de acceso, se marcará como inactivo en vez de eliminarse.'))return;
+  try{
+    // Intentar borrar primero
+    await sbDel('empleados',editEmpId);
+    await recargarAC();cerrarModalEmp();renderPersonal();renderAccesos();renderObras();
+    toast('Empleado eliminado');
+  }catch(e){
+    // FK constraint: tiene registros, solo marcar inactivo
+    try{
+      await sbPatch('empleados',editEmpId,{activo:false});
+      await recargarAC();cerrarModalEmp();renderPersonal();renderAccesos();renderObras();
+      toast('Marcado como inactivo (tiene registros de acceso)');
+    }catch(e2){toast('Error: '+e2.message,'err');}
+  }
+}
+
+// ═══════════════ OBRAS ═══════════════
+let editObraId=null;
+function renderObras(){
+  const el=document.getElementById('obras-list');if(!el)return;
+  if(!OBRAS.length){el.innerHTML='<div class="empty">Sin obras. Crea la primera ↑</div>';return;}
+  const CE={activa:'os-activa',pausada:'os-pausada',terminada:'os-terminada'};
+  const CL={activa:'Activa',pausada:'Pausada',terminada:'Terminada'};
+  const nomEmps=(window.NOM_EMPS||[]).filter(e=>e.activo);
+  el.innerHTML=OBRAS.map(o=>{
+    const empsEdificio=AC.empleados.filter(e=>String(e.obraId)===String(o.id)&&e.activo);
+    const empsNomina=nomEmps.filter(e=>e.obra===o.nombre);
+    const emps=[...empsEdificio,...empsNomina];
+    return`<div class="obra-card">
+      <div class="obra-card-hdr">
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏗</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.nombre}</div>
+          <div style="font-size:11px;color:var(--ink2)">${o.cliente||''}${o.dir?' · '+o.dir:''}</div>
+        </div>
+        <span class="obra-status ${CE[o.estado]||'os-activa'}">${CL[o.estado]||'Activa'}</span>
+        <button class="btn btn-ghost btn-xs" onclick="abrirModalObra('${o.id}')">Editar</button>
+      </div>
+      <div class="obra-card-body">
+        ${o.inicio||o.fin?`<div style="font-size:11px;color:var(--ink2);margin-bottom:8px">${o.inicio?'Inicio: '+o.inicio:''} ${o.fin?' · Fin est: '+o.fin:''}</div>`:''}
+        <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Trabajadores (${emps.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${emps.length?emps.map(e=>{const c=col(e.id);return`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600"><span style="width:18px;height:18px;border-radius:50%;background:${c.bg};color:${c.tc};font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">${getInits(e.nombre)}</span>${e.nombre}</span>`;}).join(''):'<span style="font-size:12px;color:var(--ink3)">Sin asignar</span>'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalObra(id){
+  editObraId=id||null;
+  const m=document.getElementById('m-obra');
+  if(id){
+    const o=OBRAS.find(x=>String(x.id)===String(id));if(!o)return;
+    document.getElementById('m-obra-title').textContent='Editar obra';
+    document.getElementById('o-nombre').value=o.nombre||'';
+    document.getElementById('o-cliente').value=o.cliente||'';
+    document.getElementById('o-dir').value=o.dir||'';
+    document.getElementById('o-inicio').value=o.inicio||'';
+    document.getElementById('o-fin').value=o.fin||'';
+    document.getElementById('o-estado').value=o.estado||'activa';
+    document.getElementById('o-del-btn').style.display='inline-flex';
+  }else{
+    document.getElementById('m-obra-title').textContent='Nueva obra';
+    ['o-nombre','o-cliente','o-dir','o-inicio','o-fin'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('o-estado').value='activa';
+    document.getElementById('o-del-btn').style.display='none';
+  }
+  // Mostrar trabajadores asignados a esta obra
+  setTimeout(()=>{
+    const wrap=document.getElementById('o-trabajadores-wrap');if(!wrap)return;
+    const nombreObra=id?OBRAS.find(x=>String(x.id)===String(id))?.nombre:'';
+    const nomEmps=(window.NOM_EMPS||[]).filter(e=>e.activo&&e.obra===nombreObra);
+    const edifEmps=id?AC.empleados.filter(e=>String(e.obraId)===String(id)&&e.activo):[];
+    const todos=[...edifEmps.map(e=>({...e,_tipo:'edificio'})),...nomEmps.map(e=>({...e,_tipo:'nomina'}))];
+    if(!todos.length){wrap.innerHTML='<div style="font-size:12px;color:var(--ink3)">Sin trabajadores asignados aún</div>';return;}
+    wrap.innerHTML=todos.map(e=>{const c=col(e.id||e.nombre);return`<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border)"><div class="av av-sm" style="background:${c.bg};color:${c.tc}">${getInits(e.nombre)}</div><span style="font-size:12px;font-weight:600">${e.nombre}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto">${e._tipo==='edificio'?'Edificio':'Nómina'}</span></div>`;}).join('');
+  },50);
+  m.style.display='flex';
+}
+function cerrarModalObra(){document.getElementById('m-obra').style.display='none';}
+function guardarObra(){
+  const nombre=document.getElementById('o-nombre').value.trim();
+  if(!nombre){toast('Escribe el nombre','err');return;}
+  const d={id:editObraId||'obra-'+Date.now(),nombre,cliente:document.getElementById('o-cliente').value.trim(),dir:document.getElementById('o-dir').value.trim(),inicio:document.getElementById('o-inicio').value,fin:document.getElementById('o-fin').value,estado:document.getElementById('o-estado').value};
+  if(editObraId){const i=OBRAS.findIndex(o=>o.id===editObraId);if(i>=0)OBRAS[i]=d;}else OBRAS.push(d);
+  saveObras();syncObrasSelect();renderObras();cerrarModalObra();toast('Obra guardada');
+}
+function eliminarObra(){
+  if(!confirm('¿Eliminar esta obra?'))return;
+  OBRAS=OBRAS.filter(o=>o.id!==editObraId);
+  saveObras();syncObrasSelect();renderObras();cerrarModalObra();toast('Eliminada');
+}
+
+// ═══════════════ CIERRE / RAYAS ═══════════════
+function NominaApp({nomData,onSave,accesosReg}){
+  const[emps,setEmps]=useState(nomData?.empleados||[]);
+  const[pagos,setPagos]=useState(nomData?.pagos||[]);
+  const[asist,setAsist]=useState(nomData?.asistencias||[]);
+  const[semana,setSemana]=useState(semanaDeHoy().key);
+  const[modalEmp,setModalEmp]=useState(null);
+  const[modalPago,setModalPago]=useState(null);
+  const[confirm,setConfirm]=useState(null);
+
+  const saveRef=useRef(null);
+  const stRef=useRef({});
+  stRef.current={empleados:emps,pagos,asistencias:asist};
+  window.NOM_EMPS=emps; // expose for renderObras
+  useEffect(()=>{clearTimeout(saveRef.current);saveRef.current=setTimeout(()=>onSave(stRef.current),1800);},[emps,pagos,asist]);
+
+  const activos=emps.filter(e=>e.activo);
+  const getPago=(id,sem)=>pagos.find(p=>p.empId===id&&p.semana===sem);
+  const getFaltasManuales=(id,sem)=>asist.find(a=>a.empId===id&&a.semana===sem)?.faltas||[];
+
+  // Para TREME: detectar faltas automáticamente de los registros de Paola
+  const getFaltas=(emp,sem)=>{
+    const manuales=getFaltasManuales(emp.id,sem);
+    if(emp.obra!=='TREME edificio'&&emp.obra!=='TREME')return manuales;
+    // buscar en AC por nombre
+    const ac=AC.empleados.find(e=>e.nombre.toLowerCase()===emp.nombre.toLowerCase());
+    if(!ac)return manuales;
+    const diasSem=diasSemana(sem,emp.dias||6);
+    const hoyI=hoy();
+    const deAC=diasSem.map(d=>{
+      if(d.fecha>hoyI)return null;
+      const tiene=accesosReg.some(r=>r.empId===ac.id&&r.fechaISO===d.fecha&&r.tipo==='entrada');
+      return!tiene?d.fecha:null;
+    }).filter(Boolean);
+    return deAC.length>0?[...new Set([...manuales,...deAC])]:manuales;
+  };
+
+  const getRetardos=(emp,sem)=>{
+    if(emp.obra!=='TREME edificio'&&emp.obra!=='TREME')return 0;
+    const ac=AC.empleados.find(e=>e.nombre.toLowerCase()===emp.nombre.toLowerCase());
+    if(!ac)return 0;
+    return diasSemana(sem,emp.dias||6).reduce((tot,d)=>{
+      return tot+accesosReg.filter(r=>r.empId===ac.id&&r.fechaISO===d.fecha&&r.tipo==='entrada'&&r.estado==='retardo').reduce((s,r)=>s+(r.minutosTarde||0),0);
+    },0);
+  };
+
+  const getMonto=(emp,sem)=>{
+    const faltas=getFaltas(emp,sem);const retMin=getRetardos(emp,sem);
+    const diaVal=(emp.sueldo||0)/(emp.dias||6);
+    const hrVal=diaVal/8;
+    return Math.max((emp.sueldo||0)-faltas.length*diaVal-(retMin/60)*hrVal,0);
+  };
+
+  const toggleFalta=(emp,fecha)=>setAsist(as=>{
+    const rec=as.find(a=>a.empId===emp.id&&a.semana===semana)||{empId:emp.id,semana,faltas:[]};
+    const ya=rec.faltas.includes(fecha);
+    const nuevo={...rec,faltas:ya?rec.faltas.filter(f=>f!==fecha):[...rec.faltas,fecha]};
+    const existe=as.find(a=>a.empId===emp.id&&a.semana===semana);
+    return existe?as.map(a=>a.empId===emp.id&&a.semana===semana?nuevo:a):[...as,nuevo];
+  });
+
+  const guardarEmp=emp=>{setEmps(es=>emp.id&&es.find(e=>e.id===emp.id)?es.map(e=>e.id===emp.id?emp:e):[...es,emp]);setModalEmp(null);};
+  const elimEmp=id=>setConfirm({msg:'¿Eliminar empleado?',ok:()=>{setEmps(es=>es.filter(e=>e.id!==id));setConfirm(null);}});
+  const guardarPago=p=>{setPagos(ps=>ps.find(x=>x.id===p.id)?ps.map(x=>x.id===p.id?p:x):[...ps,p]);setModalPago(null);};
+  const elimPago=id=>setConfirm({msg:'¿Eliminar este pago?',ok:()=>{setPagos(ps=>ps.filter(p=>p.id!==id));setConfirm(null);}});
+
+  // Agrupar por obra
+  const obras=window.OBRAS_LIST||[];
+  const grupos=useMemo(()=>{
+    const m={};
+    activos.forEach(e=>{const k=e.obra||'__sin__';if(!m[k])m[k]=[];m[k].push(e);});
+    return m;
+  },[activos]);
+
+  // Totales
+  const totalSem=activos.reduce((s,e)=>s+getMonto(e,semana),0);
+  const pagadoSem=pagos.filter(p=>p.semana===semana).reduce((s,p)=>s+(p.monto||0),0);
+  const pendSem=activos.filter(e=>!getPago(e.id,semana)).length;
+
+  return React.createElement('div',{style:{paddingBottom:24}},
+    // Header
+    React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}},
+      React.createElement('div',null,
+        React.createElement('div',{className:'pg-title'},'Rayas del viernes'),
+        React.createElement('div',{className:'pg-sub'},'Cierre semanal · '+semLabel(semana))
+      ),
+      React.createElement('button',{className:'btn btn-primary btn-sm',onClick:()=>setModalEmp('new')},'+ Empleado')
+    ),
+    // Semana selector
+    React.createElement('div',{style:{display:'flex',gap:8,marginBottom:20,alignItems:'center'}},
+      React.createElement('select',{className:'sel',value:semana,onChange:e=>setSemana(e.target.value),style:{flex:1}},
+        ultimasSemanas().map(s=>React.createElement('option',{key:s,value:s},semLabel(s)+(s===semanaDeHoy().key?' ← esta semana':'')))
+      )
+    ),
+    // Stats
+    React.createElement('div',{className:'stat-grid cols-3',style:{marginBottom:20}},
+      React.createElement('div',{className:'stat'},React.createElement('div',{className:'stat-label'},'Total a pagar'),React.createElement('div',{className:'stat-val',style:{color:'var(--ink)',fontFamily:'DM Mono,monospace'}},fmt$(totalSem)),React.createElement('div',{className:'stat-note'},activos.length+' trabajadores')),
+      React.createElement('div',{className:'stat'},React.createElement('div',{className:'stat-label'},'Ya pagado'),React.createElement('div',{className:'stat-val',style:{color:'#1A5C32',fontFamily:'DM Mono,monospace'}},fmt$(pagadoSem)),React.createElement('div',{className:'stat-note'},activos.filter(e=>getPago(e.id,semana)).length+' personas')),
+      React.createElement('div',{className:'stat'},React.createElement('div',{className:'stat-label'},'Por pagar'),React.createElement('div',{className:'stat-val',style:{color:pendSem>0?'var(--warn)':'#1A5C32',fontFamily:'DM Mono,monospace'}},pendSem===0?'✓ Listo':fmt$(totalSem-pagadoSem)),React.createElement('div',{className:'stat-note'},pendSem+' personas pendientes'))
+    ),
+    // Grupos por obra
+    Object.entries(grupos).length===0&&React.createElement('div',{className:'empty'},'Sin empleados. Agrega el primero ↑'),
+    Object.entries(grupos).map(([obraKey,lista])=>{
+      const obraLabel=obraKey==='__sin__'?'Sin obra':obraKey;
+      const subtotal=lista.reduce((s,e)=>s+getMonto(e,semana),0);
+      const pagadoObra=lista.filter(e=>getPago(e.id,semana)).reduce((s,e)=>s+(getPago(e.id,semana)?.monto||0),0);
+      const esTREME=obraKey.toLowerCase().includes('treme');
+      return React.createElement('div',{key:obraKey,className:'obra-block'},
+        // Header obra
+        React.createElement('div',{className:'obra-hdr'},
+          React.createElement('span',{style:{fontSize:16}},obraKey==='__sin__'?'📋':'🏗'),
+          React.createElement('span',{className:'obra-hdr-name'},obraLabel),
+          esTREME&&React.createElement('span',{style:{fontSize:10,fontWeight:700,background:'var(--blue-light)',color:'var(--blue)',padding:'2px 7px',borderRadius:99,marginLeft:4}},'⚡ Accesos auto'),
+          React.createElement('div',{className:'obra-hdr-right'},
+            React.createElement('span',{style:{fontSize:11,color:'var(--ink3)'}},lista.length+' personas'),
+            React.createElement('span',{className:'obra-total',style:{color:pagadoObra>=subtotal?'#1A5C32':'var(--ink)'}},fmt$(pagadoObra)+' / '+fmt$(subtotal))
+          )
+        ),
+        // Filas empleados
+        lista.map(emp=>{
+          const pago=getPago(emp.id,semana);
+          const faltas=getFaltas(emp,semana);
+          const retMin=getRetardos(emp,semana);
+          const monto=getMonto(emp,semana);
+          const descuento=(emp.sueldo||0)-monto;
+          const dias=diasSemana(semana,emp.dias||6);
+          const esTREMEemp=emp.obra==='TREME edificio'||emp.obra==='TREME';
+          const c=col(emp.id);
+          return React.createElement('div',{key:emp.id},
+            React.createElement('div',{className:'emp-row',style:{background:pago?'#F6FBF7':'var(--surface)'}},
+              React.createElement('div',{className:'av',style:{background:c.bg,color:c.tc}},getInits(emp.nombre)),
+              React.createElement('div',{className:'emp-row-info'},
+                React.createElement('div',{className:'emp-row-name'},emp.nombre,pago&&React.createElement('span',{style:{fontSize:10,fontWeight:600,color:'#1A5C32',marginLeft:6}},'✓ Pagado')),
+                React.createElement('div',{className:'emp-row-sub'},
+                  emp.puesto||'',
+                  faltas.length>0&&React.createElement('span',{style:{color:'var(--warn)',fontWeight:700,marginLeft:6}},faltas.length+' falta'+(faltas.length>1?'s':'')),
+                  retMin>0&&React.createElement('span',{style:{color:'var(--gold)',fontWeight:700,marginLeft:6}},retMin+'min tarde'),
+                  esTREMEemp&&React.createElement('span',{style:{fontSize:9,fontWeight:700,background:'var(--blue-light)',color:'var(--blue)',padding:'1px 5px',borderRadius:4,marginLeft:6}},'⚡ auto')
+                )
+              ),
+              React.createElement('div',{className:'emp-row-monto'},
+                React.createElement('div',{className:'emp-row-val',style:{color:pago?'#1A5C32':descuento>0?'var(--warn)':'var(--ink)'}},fmt$(pago?.monto??monto)),
+                descuento>0&&!pago&&React.createElement('div',{className:'emp-row-desc'},'-'+fmt$(descuento))
+              ),
+              React.createElement('div',{style:{display:'flex',gap:4,flexShrink:0,alignItems:'center'}},
+                React.createElement('button',{className:'btn btn-ghost btn-xs',title:'Editar empleado',onClick:()=>setModalEmp(emp)},'✎ Emp'),
+                pago
+                  ?React.createElement('div',{style:{display:'flex',gap:4}},
+                      React.createElement('button',{className:'btn btn-ghost btn-xs',onClick:()=>setModalPago({emp,semana,existente:pago,monto})},'✏ Pago'),
+                      React.createElement('button',{className:'btn btn-danger btn-xs',onClick:()=>elimPago(pago.id)},'✕')
+                    )
+                  :React.createElement('button',{className:'btn btn-accent btn-sm',onClick:()=>setModalPago({emp,semana,existente:null,monto})},'Pagar')
+              )
+            ),
+            // Botones de faltas (solo si no está pagado y no es TREME)
+            !pago&&!esTREMEemp&&React.createElement('div',{className:'faltas-row'},
+              dias.map(({fecha,label})=>{
+                const esFalta=faltas.includes(fecha);
+                return React.createElement('button',{key:fecha,className:'falta-btn '+(esFalta?'ausente':'presente'),onClick:()=>toggleFalta(emp,fecha)},label,React.createElement('br'),esFalta?'✗':'✓');
+              })
+            ),
+            !pago&&esTREMEemp&&faltas.length>0&&React.createElement('div',{style:{padding:'6px 16px 10px 64px',fontSize:11,color:'var(--blue)',display:'flex',alignItems:'center',gap:6}},
+              React.createElement('span',{style:{background:'var(--blue-light)',padding:'3px 8px',borderRadius:6,fontWeight:600}},'⚡ '+faltas.length+' falta'+(faltas.length>1?'s':'')+' detectadas del control de accesos'+(retMin>0?' · '+retMin+'min acumulados tarde':''))
+            )
+          );
+        })
+      );
+    }),
+    // Botón pagar todos
+    pendSem>0&&React.createElement('button',{className:'btn btn-accent',style:{width:'100%',justifyContent:'center',marginTop:12},onClick:()=>{
+      const nuevos=activos.filter(e=>!getPago(e.id,semana)).map(e=>({id:uid(),empId:e.id,semana,monto:getMonto(e,semana),fecha:hoy(),metodo:'Efectivo',nota:''}));
+      setPagos(ps=>[...ps,...nuevos]);
+    }},'✅ Marcar todos como pagados — '+fmt$(totalSem-pagadoSem)),
+
+    // Modals
+    modalEmp&&React.createElement(ModalEmp,{emp:modalEmp==='new'?null:modalEmp,onSave:guardarEmp,onClose:()=>setModalEmp(null),onDel:elimEmp}),
+    modalPago&&React.createElement(ModalPago,{...modalPago,onSave:guardarPago,onClose:()=>setModalPago(null)}),
+    confirm&&React.createElement('div',{className:'mover',onClick:e=>{if(e.target===e.currentTarget)setConfirm(null)}},
+      React.createElement('div',{className:'mbox',style:{maxWidth:320,textAlign:'center',padding:28}},
+        React.createElement('div',{style:{fontSize:32,marginBottom:10}},'🗑'),
+        React.createElement('div',{style:{fontWeight:800,fontSize:15,marginBottom:16}},confirm.msg),
+        React.createElement('div',{style:{display:'flex',gap:8,justifyContent:'center'}},
+          React.createElement('button',{className:'btn btn-danger',onClick:confirm.ok},'Sí, eliminar'),
+          React.createElement('button',{className:'btn btn-ghost',onClick:()=>setConfirm(null)},'Cancelar')
+        )
+      )
+    )
+  );
+}
+
+function ModalEmp({emp,onSave,onClose,onDel}){
+  const obras=window.OBRAS_LIST||[];
+  const[f,sf]=useState(emp||{nombre:'',puesto:'',obra:'',sueldo:'',dias:6,activo:true});
+  return React.createElement('div',{className:'mover',onClick:e=>{if(e.target===e.currentTarget)onClose()}},
+    React.createElement('div',{className:'mbox'},
+      React.createElement('div',{className:'mhead'},
+        React.createElement('span',{className:'mhead-title'},emp?'Editar empleado':'Nuevo empleado'),
+        React.createElement('button',{className:'mclose',onClick:onClose},'✕')
+      ),
+      React.createElement('div',{className:'mbody'},
+        React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Nombre'),React.createElement('input',{className:'inp',value:f.nombre,onChange:e=>sf(x=>({...x,nombre:e.target.value})),placeholder:'Nombre completo'})),
+        React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Puesto'),React.createElement('input',{className:'inp',value:f.puesto||'',onChange:e=>sf(x=>({...x,puesto:e.target.value})),placeholder:'Ej. Maestro de obra'})),
+        React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Obra / Proyecto'),
+          React.createElement('select',{className:'sel',value:f.obra||'',onChange:e=>sf(x=>({...x,obra:e.target.value}))},
+            React.createElement('option',{value:''},'Sin asignar'),
+            React.createElement('option',{value:'TREME edificio'},'TREME edificio ⚡'),
+            obras.map(o=>React.createElement('option',{key:o.id,value:o.nombre},o.nombre))
+          )
+        ),
+        React.createElement('div',{className:'inp-row cols-2'},
+          React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Sueldo semanal $'),React.createElement('input',{className:'inp',type:'number',value:f.sueldo||'',onChange:e=>sf(x=>({...x,sueldo:e.target.value})),placeholder:'0'})),
+          React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Días/semana'),React.createElement('select',{className:'sel',value:f.dias||6,onChange:e=>sf(x=>({...x,dias:Number(e.target.value)}))},
+            [3,4,5,6,7].map(n=>React.createElement('option',{key:n,value:n},n+' días'))
+          ))
+        ),
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8}},
+          React.createElement('input',{type:'checkbox',checked:f.activo,onChange:e=>sf(x=>({...x,activo:e.target.checked})),style:{width:16,height:16,accentColor:'var(--accent)'}}),
+          React.createElement('label',{style:{fontSize:13}},'Empleado activo')
+        )
+      ),
+      React.createElement('div',{className:'mfoot'},
+        emp&&React.createElement('button',{className:'btn btn-danger btn-sm',style:{marginRight:'auto'},onClick:()=>onDel(emp.id)},'Eliminar'),
+        React.createElement('button',{className:'btn btn-ghost btn-sm',onClick:onClose},'Cancelar'),
+        React.createElement('button',{className:'btn btn-primary btn-sm',onClick:()=>{if(!f.nombre)return;onSave({...f,sueldo:Number(f.sueldo)||0,id:f.id||uid()});}},emp?'Guardar cambios':'Agregar')
+      )
+    )
+  );
+}
+
+function ModalPago({emp,semana,existente,monto,onSave,onClose}){
+  const[f,sf]=useState({monto:existente?.monto??monto??0,fecha:existente?.fecha??hoy(),metodo:existente?.metodo??'Efectivo',nota:existente?.nota??''});
+  const c=col(emp.id);
+  return React.createElement('div',{className:'mover',onClick:e=>{if(e.target===e.currentTarget)onClose()}},
+    React.createElement('div',{className:'mbox'},
+      React.createElement('div',{className:'mhead'},React.createElement('span',{className:'mhead-title'},'Registrar pago'),React.createElement('button',{className:'mclose',onClick:onClose},'✕')),
+      React.createElement('div',{className:'mbody'},
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,background:'var(--bg)',border:'1px solid var(--border)',borderRadius:10,padding:12,marginBottom:14}},
+          React.createElement('div',{className:'av',style:{background:c.bg,color:c.tc}},getInits(emp.nombre)),
+          React.createElement('div',null,
+            React.createElement('div',{style:{fontWeight:800,fontSize:14}},emp.nombre),
+            React.createElement('div',{style:{fontSize:11,color:'var(--ink2)'}},emp.puesto||emp.obra||'',' · '+semLabel(semana))
+          )
+        ),
+        React.createElement('div',{className:'inp-row cols-2'},
+          React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Monto $'),React.createElement('input',{className:'inp',type:'number',value:f.monto,onChange:e=>sf(x=>({...x,monto:e.target.value}))})),
+          React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Fecha'),React.createElement('input',{className:'inp',type:'date',value:f.fecha,onChange:e=>sf(x=>({...x,fecha:e.target.value}))}))
+        ),
+        React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Método'),
+          React.createElement('select',{className:'sel',value:f.metodo,onChange:e=>sf(x=>({...x,metodo:e.target.value}))},
+            ['Efectivo','Transferencia SPEI','Depósito','Cheque'].map(m=>React.createElement('option',{key:m},m))
+          )
+        ),
+        React.createElement('div',{className:'field'},React.createElement('label',{className:'lbl'},'Nota'),React.createElement('input',{className:'inp',value:f.nota,onChange:e=>sf(x=>({...x,nota:e.target.value})),placeholder:'Horas extra, bono...'}))
+      ),
+      React.createElement('div',{className:'mfoot'},
+        React.createElement('button',{className:'btn btn-ghost btn-sm',onClick:onClose},'Cancelar'),
+        React.createElement('button',{className:'btn btn-accent',onClick:()=>onSave({...f,monto:Number(f.monto)||0,empId:emp.id,semana,id:existente?.id||uid()})},'✅ Confirmar pago')
+      )
+    )
+  );
+}
+
+// ═══════════════ PIN ═══════════════
+let pinIn='',pendRole=null;
+function renderDots(){document.getElementById('pin-dots').innerHTML=[0,1,2,3].map(i=>`<div class="pin-dot ${i<pinIn.length?'filled':''}"></div>`).join('');}
+function pickRole(r){pendRole=r;document.getElementById('role-grid').style.display='none';document.getElementById('pin-panel').classList.add('show');pinIn='';renderDots();}
+function backRoles(){document.getElementById('pin-panel').classList.remove('show');document.getElementById('role-grid').style.display='flex';document.getElementById('pin-err').textContent='';pinIn='';}
+function pk(k){if(k==='⌫'){pinIn=pinIn.slice(0,-1);renderDots();return;}if(k==='ok'){checkPin();return;}if(pinIn.length<4){pinIn+=k;renderDots();if(pinIn.length===4)setTimeout(checkPin,100);}}
+function checkPin(){const ok=pendRole==='admin'?PIN_ADMIN:PIN_GUARDIA;if(pinIn===ok)enterApp(pendRole);else{document.getElementById('pin-err').textContent='PIN incorrecto';pinIn='';renderDots();}}
+
+async function enterApp(role){
+  currentRole=role;
+  document.getElementById('pin-screen').style.display='none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('hdr-user').textContent=role==='admin'?'Andrés':'Paola';
+  document.getElementById('hdr-user').className='hdr-user '+(role==='admin'?'admin':'guardia');
+
+  // Admin-only elements
+  const adminOnly=['adiv','asec','s-nomina','s-personal','s-obras','bn-nomina','bn-obras'];
+  adminOnly.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=role==='guardia'?'none':'';});
+
+  if(window.innerWidth<=680){
+    document.getElementById('bnav').style.display='flex';
+    if(role==='guardia'){['bn-nomina','bn-obras'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
+  }
+
+  startClock();
+  loadObras();syncObrasSelect();
+
+  try{
+    await recargarAC();
+    startPolling();
+  }catch(e){toast('Error de conexión','err');}
+
+  renderAccesos();renderObras();renderPersonal();
+  // Actualizar label fecha accesos
+  const fl=document.getElementById('acc-fecha-label');
+  if(fl)fl.textContent='TREME Edificio · '+new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+
+  if(role==='admin'){
+    window.OBRAS_LIST=OBRAS;
+    const nomData=await loadNomData();
+    ReactDOM.createRoot(document.getElementById('nomina-root')).render(
+      React.createElement(NominaApp,{nomData,onSave:saveNomData,accesosReg:AC.registros})
+    );
+  }
+}
+
+function startPolling(){
+  const d30=new Date();d30.setDate(d30.getDate()-30);const desde=d30.toISOString().slice(0,10);
+  let lastId=AC.registros[0]?.id||0;
+  setInterval(async()=>{
+    try{
+      const regs=await sbGet('registros',`select=*&order=id.desc&limit=2000&fecha_iso=gte.${desde}`);
+      const nr=regs.map(normReg);const nid=nr[0]?.id||0;
+      if(nid!==lastId){lastId=nid;AC.registros=nr;renderAccesos();}
+    }catch{}
+  },12000);
+}
+
+function startClock(){
+  const tick=()=>{const n=new Date();document.getElementById('clk').textContent=n.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});};
+  tick();setInterval(tick,1000);
+}
+
+function goPage(pg,btn,mobile=false){
+  document.querySelectorAll('.s-btn,.bn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+pg).classList.add('on');
+  btn.classList.add('on');
+  const s=document.getElementById('s-'+pg),b=document.getElementById('bn-'+pg);
+  if(s)s.classList.add('on');if(b)b.classList.add('on');
+  if(pg==='personal')renderPersonal();
+  if(pg==='obras'){window.OBRAS_LIST=OBRAS;renderObras();}
+}
+
+function logout(){
+  currentRole=null;pinIn='';
+  document.getElementById('pin-screen').style.display='flex';
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('pin-panel').classList.remove('show');
+  document.getElementById('role-grid').style.display='flex';
+  document.getElementById('pin-err').textContent='';
+}
+
+function toast(msg,tipo='ok'){
+  const t=document.getElementById('toast');
+  document.getElementById('tdot').style.background=tipo==='err'?'#E05A3A':'#4CAF50';
+  document.getElementById('tmsg').textContent=msg;
+  t.classList.add('show');clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('pin-panel').classList.contains('show')){
+    if(e.key>='0'&&e.key<='9')pk(e.key);
+    if(e.key==='Backspace')pk('⌫');
+    if(e.key==='Enter')pk('ok');
+  }
+});
+document.getElementById('m-emp').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModalEmp();});
+document.getElementById('m-obra').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModalObra();});
+window.addEventListener('load',()=>{document.getElementById('role-grid').style.display='flex';});
+</script>
+</body>
+</html>
